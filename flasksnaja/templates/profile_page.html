@@ -6,7 +6,7 @@
     <h1>Profile</h1>
     <div class="profile-container">
        
-            <img src="../static/public/profile.png" id="profile-pic">
+            <img src="{{user.pic}}" id="profile-pic">
             <label style="margin-top: 20px; font-size: 1em; cursor: pointer;" for="input-file">เปลี่ยนรูปภาพ</label>
             <input style="display: none; " type="file" accept="image/jpeg, image/png, image/jpg" id="input-file"
                 name="input-file;">
@@ -22,7 +22,6 @@
 </div>
 <script>
     function uploadImage() {
-        console.log("uploading")
         var input = document.getElementById('input-file');
         var file = input.files[0];
         console.log("uploading", file)

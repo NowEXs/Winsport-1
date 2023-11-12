@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
 from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
-from .forms import UpdateAccountForm
+
 from . import db
 import os
 import secrets
@@ -116,15 +116,15 @@ def save_picture(form_picture):
 @routes.route("/pro_test", methods=['GET', 'POST']) #demo profile but have fav button
 @login_required 
 def pro_test():
-    form = UpdateAccountForm()
-    if form.validate_on_submit(): 
-        if form.picture.data:
-            picture_file = save_picture(form.picture.data)
-            current_user.image_file = picture_file
-        db.session.commit()
-
-    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
-    return render_template('profile_page.html', image_file=image_file, form=form)
+    email = session.get("email")
+    
+    user = User.query.filter_by(email=email).first()
+    if user:
+        first_name = user.first_name
+        return render_template("profile_page.html", first_name=first_name ,email=email, user=current_user)
+    else:
+        flash("ไม่พบบัญชี", category="error")
+        return redirect("/register")
 
 @routes.route("/login", methods=["GET", "POST"])
 def login():
@@ -178,7 +178,9 @@ def regist():
     return render_template("register_page.html", user=current_user)
 
 @routes.route('/upload-endpoint', methods=['POST'])
+@login_required
 def upload_file():
+    email = session.get("email")
     if 'image' not in request.files:
         return redirect(request.url)
 
@@ -190,6 +192,9 @@ def upload_file():
     if file and allowed_file(file.filename):
         filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filename)
+        prefix_to_remove = 'flasksnaja'
+        User.query.filter_by(email=email).update({'pic': filename[len(prefix_to_remove):]})
+        db.session.commit()
         return 'File uploaded successfully!'
 
     return 'Invalid file type!'
