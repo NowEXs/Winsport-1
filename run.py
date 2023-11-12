@@ -1,7 +1,4 @@
-from flasksnaja import create_app
+from flasksnaja import app  # Corrected import statement
 
-app = create_app()
-
-if __name__ == "__main__":
-
+if __name__ == '__main__':
     app.run(debug=True)
