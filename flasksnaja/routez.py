@@ -1,12 +1,16 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
-from .models import User, Pic
+from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import db
 from flask_login import login_user, login_required, logout_user, current_user
+import os
+from flasksnaja import app
 
 routes = Blueprint("routes", __name__)
-
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 button_state = 0
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @routes.route("/")
 def home():
@@ -153,7 +157,7 @@ def regist():
         elif len(password1) < 7:
             flash("รหัสผ่านต้องมีความยาวไม่ต่ำกว่า 7 ตัวอักษร", category='error')
         else:
-            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password1, method='sha256'))
+            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password1, method='pbkdf2:sha256'))
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user, remember=True)
@@ -162,3 +166,20 @@ def regist():
 
             # add user to database 
     return render_template("register_page.html", user=current_user)
+
+@routes.route('/upload-endpoint', methods=['POST'])
+def upload_file():
+    if 'image' not in request.files:
+        return redirect(request.url)
+
+    file = request.files['image']
+
+    if file.filename == '':
+        return redirect(request.url)
+
+    if file and allowed_file(file.filename):
+        filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(filename)
+        return 'File uploaded successfully!'
+
+    return 'Invalid file type!'
