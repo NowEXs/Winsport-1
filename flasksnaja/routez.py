@@ -1,7 +1,10 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
-from .models import User, Pic
+from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
+from .forms import UpdateAccountForm
 from . import db
+import os
+import secrets
 from flask_login import login_user, login_required, logout_user, current_user
 
 routes = Blueprint("routes", __name__)
@@ -97,20 +100,27 @@ def toggle():
         image_url = "../static/public/morter-removebg-preview.png"
     return jsonify({"image_url": image_url, "button_state": button_state})
 
+def save_picture(form_picture):
+    random_hex = secrets.token_hex(8)
+    _, f_ext = os.path.splitext(form_picture.filename)
+    picture_fn = random_hex + f_ext
+    picture_path = os.path.join(routes.root_path, 'static/profile_pics', picture_fn)
+    form_picture.save(picture_path)
 
-@routes.route("/pro_test", methods=['GET']) #demo profile but have fav button
+    return picture_fn
+
+@routes.route("/pro_test", methods=['GET', 'POST']) #demo profile but have fav button
 @login_required 
 def pro_test():
-    email = session.get("email")
-    
-    user = User.query.filter_by(email=email).first()
-    if user:
-        first_name = user.first_name
-        return render_template("profile_page.html", first_name=first_name ,email=email, user=current_user)
-    else:
-        flash("ไม่พบบัญชี", category="error")
-        return redirect("/register")
+    form = UpdateAccountForm()
+    if form.validate_on_submit(): 
+        if form.picture.data:
+            picture_file = save_picture(form.picture.data)
+            current_user.image_file = picture_file
+        db.session.commit()
 
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+    return render_template('profile_page.html', image_file=image_file, form=form)
 
 @routes.route("/login", methods=["GET", "POST"])
 def login():
@@ -162,3 +172,16 @@ def regist():
 
             # add user to database 
     return render_template("register_page.html", user=current_user)
+
+"""@routes.route("/get_profile", methods=["GET", "POST"]) 
+def get_profile():
+    if request.method == "GET":
+        return jsonify({"current_user": "HJelo"})
+    else:
+        email = request.form.get("email")
+        password = request.form.get("password")
+        age = request.form.get("age")
+        User.query.filter_by(email=email).update({'email': password})
+        db.session.commit()
+        print(email, password,age,"<<<<<<<<------------------")
+        return jsonify(email, password,age)"""
