@@ -2,5 +2,8 @@ flask
 flask_sqlalchemy
 flask_login
 werkzeug
-sha256
-hashlib
+folium
+base64
+werkzeug.security
+sqlalchemy.sql
+os
