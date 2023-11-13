@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>My Favorites</h1>
+<ul>
+    {% for favorite in user.favorites %}
+    <p>{{ favorite.item_id }} - <!-- Other fields related to the favorite item --></p>
+    {% endfor %}
+</ul>
+{% endblock %}

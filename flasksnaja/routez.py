@@ -1,12 +1,9 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
 from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from . import db
 import os
-import secrets
 from flask_login import login_user, login_required, logout_user, current_user
-import os
 from flasksnaja import app
 
 routes = Blueprint("routes", __name__)
@@ -104,14 +101,6 @@ def toggle():
         image_url = "../static/public/morter-removebg-preview.png"
     return jsonify({"image_url": image_url, "button_state": button_state})
 
-def save_picture(form_picture):
-    random_hex = secrets.token_hex(8)
-    _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = random_hex + f_ext
-    picture_path = os.path.join(routes.root_path, 'static/profile_pics', picture_fn)
-    form_picture.save(picture_path)
-
-    return picture_fn
 
 @routes.route("/pro_test", methods=['GET', 'POST']) #demo profile but have fav button
 @login_required 
@@ -195,18 +184,17 @@ def upload_file():
         prefix_to_remove = 'flasksnaja'
         User.query.filter_by(email=email).update({'pic': filename[len(prefix_to_remove):]})
         db.session.commit()
+        flash("เปลี่ยนรูปโปรไฟล์สำเร็จ", category='success')
         return 'File uploaded successfully!'
 
     return 'Invalid file type!'
-"""@routes.route("/get_profile", methods=["GET", "POST"]) 
-def get_profile():
-    if request.method == "GET":
-        return jsonify({"current_user": "HJelo"})
-    else:
-        email = request.form.get("email")
-        password = request.form.get("password")
-        age = request.form.get("age")
-        User.query.filter_by(email=email).update({'email': password})
-        db.session.commit()
-        print(email, password,age,"<<<<<<<<------------------")
-        return jsonify(email, password,age)"""
+
+@routes.route('/toggle_favorite/<int:item_id>', methods=['POST'])
+@login_required
+def toggle_favorite(item_id):
+    user = current_user
+    user.toggle_favorite(item_id)
+    db.session.commit()
+
+    # Return a JSON response indicating the status
+    return jsonify({'status': 'added' if item_id in user.get_favorite_list() else 'removed'})
